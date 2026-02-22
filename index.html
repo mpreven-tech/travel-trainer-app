@@ -83,6 +83,7 @@
             box-shadow: 0 10px 40px rgba(0, 242, 96, 0.15), 0 0 0 1px rgba(255,255,255,0.05);
             background: #050505;
             padding: 15px;
+            object-fit: contain;
         }
         .app-logo-small {
             width: 70px;
@@ -92,9 +93,11 @@
             background: #050505;
             padding: 8px;
             box-shadow: 0 4px 15px rgba(0, 242, 96, 0.1), 0 0 0 1px rgba(255,255,255,0.05);
+            object-fit: contain;
         }
         .loading-title {
             font-size: 1.6em;
+            font-weight: 500;
             color: #fff;
             text-align: center;
             letter-spacing: 1px;
@@ -712,39 +715,7 @@
 <body>
 
 <div id="loadingScreen" class="overlay-screen">
-    <svg class="app-logo-large" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <defs>
-            <linearGradient id="neonGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stop-color="#0575E6" />
-                <stop offset="100%" stop-color="#00f260" />
-            </linearGradient>
-            <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="1.5" result="blur" />
-                <feComposite in="SourceGraphic" in2="blur" operator="over" />
-            </filter>
-        </defs>
-        <!-- Sparkles -->
-        <g fill="url(#neonGrad)" filter="url(#neonGlow)">
-            <path d="M 12 50 Q 18 50 18 44 Q 18 50 24 50 Q 18 50 18 56 Q 18 50 12 50 Z" />
-            <path d="M 82 58 Q 88 58 88 52 Q 88 58 94 58 Q 88 58 88 64 Q 88 58 82 58 Z" />
-            <path d="M 20 24 Q 24 24 24 20 Q 24 24 28 24 Q 24 24 24 28 Q 24 24 20 24 Z" />
-            <path d="M 72 20 Q 75 20 75 17 Q 75 20 78 20 Q 75 20 75 23 Q 75 20 72 20 Z" />
-        </g>
-        <!-- Main Graphic -->
-        <g stroke="url(#neonGrad)" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" filter="url(#neonGlow)">
-            <!-- Suitcase Handle -->
-            <path d="M 38 24 V 14 C 38 10 40 8 44 8 H 56 C 60 8 62 10 62 14 V 24" />
-            <!-- Suitcase Body -->
-            <rect x="20" y="24" width="60" height="55" rx="8" />
-            <line x1="20" y1="38" x2="80" y2="38" />
-            <!-- Wheels -->
-            <circle cx="32" cy="85" r="4.5" />
-            <circle cx="68" cy="85" r="4.5" />
-            <!-- Flexed Bicep -->
-            <path d="M 30 65 C 25 55, 30 40, 40 38 C 48 36, 55 45, 52 50 C 60 45, 70 50, 68 60 C 65 68, 55 70, 48 65 C 45 62, 40 65, 30 65 Z" />
-            <path d="M 52 50 C 50 55, 45 58, 40 58" />
-        </g>
-    </svg>
+    <img class="app-logo-large" src="https://raw.githubusercontent.com/mpreven-tech/travel-trainer-app/refs/heads/main/travel_trainer_logo.png" alt="Travel Trainer Logo" aria-hidden="true">
     <h1 class="loading-title">Welcome to the Travel Trainer App</h1>
 </div>
 
@@ -764,35 +735,7 @@
     </div>
 
     <div class="container" id="setupScreen">
-        <svg class="app-logo-small" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <defs>
-                <linearGradient id="neonGradSmall" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stop-color="#0575E6" />
-                    <stop offset="100%" stop-color="#00f260" />
-                </linearGradient>
-                <filter id="neonGlowSmall" x="-20%" y="-20%" width="140%" height="140%">
-                    <feGaussianBlur stdDeviation="1.5" result="blur" />
-                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                </filter>
-            </defs>
-            <!-- Sparkles -->
-            <g fill="url(#neonGradSmall)" filter="url(#neonGlowSmall)">
-                <path d="M 12 50 Q 18 50 18 44 Q 18 50 24 50 Q 18 50 18 56 Q 18 50 12 50 Z" />
-                <path d="M 82 58 Q 88 58 88 52 Q 88 58 94 58 Q 88 58 88 64 Q 88 58 82 58 Z" />
-                <path d="M 20 24 Q 24 24 24 20 Q 24 24 28 24 Q 24 24 24 28 Q 24 24 20 24 Z" />
-                <path d="M 72 20 Q 75 20 75 17 Q 75 20 78 20 Q 75 20 75 23 Q 75 20 72 20 Z" />
-            </g>
-            <!-- Main Graphic -->
-            <g stroke="url(#neonGradSmall)" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" filter="url(#neonGlowSmall)">
-                <path d="M 38 24 V 14 C 38 10 40 8 44 8 H 56 C 60 8 62 10 62 14 V 24" />
-                <rect x="20" y="24" width="60" height="55" rx="8" />
-                <line x1="20" y1="38" x2="80" y2="38" />
-                <circle cx="32" cy="85" r="4.5" />
-                <circle cx="68" cy="85" r="4.5" />
-                <path d="M 30 65 C 25 55, 30 40, 40 38 C 48 36, 55 45, 52 50 C 60 45, 70 50, 68 60 C 65 68, 55 70, 48 65 C 45 62, 40 65, 30 65 Z" />
-                <path d="M 52 50 C 50 55, 45 58, 40 58" />
-            </g>
-        </svg>
+        <img class="app-logo-small" src="https://raw.githubusercontent.com/mpreven-tech/travel-trainer-app/refs/heads/main/travel_trainer_logo.png" alt="Travel Trainer Logo" aria-hidden="true">
         <h1 class="app-title">Travel Trainer</h1>
         <p class="subtitle">Training for here ... there ... and everywhere.</p>
 
