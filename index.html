@@ -1,0 +1,1566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Travel Trainer</title>
+    <script src="https://mcp.staging.figma.com/mcp/html-to-design/capture.js" async></script>
+    <style>
+        :root {
+            --primary: #00f260;
+            --secondary: #0575E6;
+            --accent: #ff0055;
+            --dark: #0a0a0a;
+            --card: rgba(20, 20, 20, 0.92);
+            --text: #ffffff;
+            --rest: #0984e3;
+        }
+
+        * { box-sizing: border-box; }
+
+        /* ADA Keyboard Focus */
+        *:focus-visible {
+            outline: 3px solid var(--primary);
+            outline-offset: 2px;
+        }
+
+        body {
+            font-family: 'Helvetica Neue Medium', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-weight: 500;
+            background: var(--dark);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overscroll-behavior: none;
+            overflow-x: hidden;
+        }
+
+        /* Animated radial background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 15% 50%, rgba(0, 242, 96, 0.06) 0%, transparent 55%),
+                radial-gradient(ellipse at 85% 20%, rgba(5, 117, 230, 0.06) 0%, transparent 55%),
+                radial-gradient(ellipse at 50% 85%, rgba(255, 0, 85, 0.04) 0%, transparent 55%);
+            animation: bgPulse 6s ease-in-out infinite alternate;
+            pointer-events: none;
+            z-index: 0;
+        }
+        @keyframes bgPulse {
+            0%   { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
+        /* --- LOADING SCREEN --- */
+        .overlay-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--dark);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+        .overlay-screen.fading-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .app-logo-large {
+            width: 140px;
+            height: 140px;
+            margin-bottom: 24px;
+            border-radius: 24px;
+            box-shadow: 0 10px 40px rgba(0, 242, 96, 0.15), 0 0 0 1px rgba(255,255,255,0.05);
+            background: #050505;
+            padding: 15px;
+        }
+        .app-logo-small {
+            width: 70px;
+            height: 70px;
+            margin-bottom: 12px;
+            border-radius: 16px;
+            background: #050505;
+            padding: 8px;
+            box-shadow: 0 4px 15px rgba(0, 242, 96, 0.1), 0 0 0 1px rgba(255,255,255,0.05);
+        }
+        .loading-title {
+            font-size: 1.6em;
+            color: #fff;
+            text-align: center;
+            letter-spacing: 1px;
+            background: linear-gradient(90deg, var(--primary), #00d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: titleShimmer 3s linear infinite;
+        }
+
+        /* --- CONTAINER --- */
+        .container {
+            background: var(--card);
+            width: 100%;
+            max-width: 500px;
+            padding: 30px 24px;
+            border-radius: 25px;
+            box-shadow: 0 0 80px rgba(0, 242, 96, 0.07), 0 0 0 1px rgba(255,255,255,0.06);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+            backdrop-filter: blur(24px);
+            margin-bottom: 60px; /* space for banner */
+        }
+
+        /* Animated gradient border */
+        .container::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: 26px;
+            background: linear-gradient(135deg, rgba(0,242,96,0.25), rgba(5,117,230,0.15), rgba(255,0,85,0.12), rgba(0,242,96,0.25));
+            background-size: 300% 300%;
+            animation: borderFlow 5s ease infinite;
+            z-index: -1;
+        }
+        @keyframes borderFlow {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Setup screen entrance */
+        #setupScreen { animation: screenEnterDown 0.65s cubic-bezier(0.34,1.56,0.64,1) both; }
+        @keyframes screenEnterDown {
+            from { opacity: 0; transform: translateY(40px) scale(0.94); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* Screen transitions */
+        .screen-exit { animation: screenExitUp 0.38s ease-in both !important; }
+        .screen-enter { animation: screenEnterUp 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
+        @keyframes screenExitUp { to { opacity: 0; transform: scale(0.92) translateY(-30px); } }
+        @keyframes screenEnterUp {
+            from { opacity: 0; transform: scale(0.94) translateY(30px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        /* --- SETUP TITLE --- */
+        .app-title {
+            font-size: 2em;
+            margin: 0 0 5px 0;
+            background: linear-gradient(90deg, var(--primary), #00d4ff, var(--primary));
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: titleShimmer 3s linear infinite;
+            letter-spacing: 1px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin: 0 0 18px 0;
+            font-size: 0.88em;
+        }
+
+        /* Style preview card */
+        .style-preview {
+            width: 100%;
+            background: rgba(0,242,96,0.05);
+            border: 1px solid rgba(0,242,96,0.12);
+            border-radius: 12px;
+            padding: 10px 14px;
+            text-align: left;
+            margin-bottom: 12px;
+            font-size: 0.82em;
+            color: #888;
+            min-height: 38px;
+            transition: all 0.3s ease;
+        }
+        .style-preview span { color: var(--primary); }
+
+        /* --- VISUAL ENGINE (RING) --- */
+        .visual-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 16px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Glow orb behind the image */
+        .visual-glow {
+            position: absolute;
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            background: var(--primary);
+            filter: blur(28px);
+            opacity: 0.12;
+            z-index: 0;
+            transition: background 0.6s ease;
+            animation: glowBreath 2.5s ease-in-out infinite;
+        }
+        @keyframes glowBreath {
+            0%, 100% { transform: scale(1);    opacity: 0.12; }
+            50%       { transform: scale(1.08); opacity: 0.22; }
+        }
+
+        .visual-img {
+            width: 270px;
+            height: 270px;
+            border-radius: 50%;
+            object-fit: cover;
+            position: absolute;
+            z-index: 1;
+            filter: brightness(0.88);
+            background: #000;
+            transition: opacity 0.35s ease;
+        }
+        .visual-img.fading { opacity: 0; }
+
+        /* Loading spinner shown while GIF loads */
+        .visual-spinner {
+            position: absolute;
+            width: 40px; height: 40px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            z-index: 3;
+            animation: spin 0.8s linear infinite;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            pointer-events: none;
+        }
+        .visual-spinner.active { opacity: 1; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- PREVIEW BUBBLE --- */
+        .preview-bubble {
+            position: absolute;
+            bottom: 0px;
+            right: 0px;
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            background: #000;
+            border: 3px solid var(--primary);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.7), 0 0 15px rgba(0,242,96,0.3);
+            z-index: 5;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .preview-bubble.active {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .preview-bubble img {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.65;
+            z-index: 1;
+        }
+        .preview-bubble .preview-label {
+            position: absolute;
+            bottom: 15px;
+            background: rgba(0,0,0,0.85);
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-size: 0.55em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #fff;
+            z-index: 2;
+            text-align: center;
+            backdrop-filter: blur(4px);
+        }
+        .state-rest .preview-bubble { border-color: var(--secondary); box-shadow: 0 8px 25px rgba(0,0,0,0.7), 0 0 15px rgba(5,117,230,0.3); }
+
+        /* SVG Ring */
+        .timer-ring-svg {
+            position: absolute;
+            top: 0; left: 0;
+            width: 300px; height: 300px;
+            transform: rotate(-90deg);
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        #progressRing {
+            transition: stroke-dashoffset 1s linear, stroke 0.4s ease, filter 0.4s ease;
+        }
+
+        /* Low-time warning on ring */
+        .low-time #progressRing {
+            stroke: var(--accent) !important;
+            filter: drop-shadow(0 0 8px var(--accent));
+            animation: ringWarn 0.55s ease-in-out infinite alternate;
+        }
+        @keyframes ringWarn {
+            from { filter: drop-shadow(0 0 4px var(--accent)); }
+            to   { filter: drop-shadow(0 0 14px var(--accent)); }
+        }
+
+        /* Breathe for rest */
+        .animate-breathe { animation: breathe 3s ease-in-out infinite; }
+        @keyframes breathe {
+            0%   { transform: scale(1); }
+            50%  { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
+
+        /* --- EXERCISE NAME --- */
+        h2 {
+            font-size: 1.3em;
+            margin: 0 0 4px 0;
+            line-height: 1.3;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+        h2.sliding-out {
+            opacity: 0;
+            transform: translateY(-8px);
+        }
+
+        /* --- TIMER DISPLAY --- */
+        .timer-display {
+            font-size: 4.5em;
+            color: var(--primary);
+            margin-top: -8px;
+            text-shadow: 0 0 28px rgba(0, 242, 96, 0.45);
+            font-variant-numeric: tabular-nums;
+            z-index: 3;
+            position: relative;
+            transition: color 0.35s ease, text-shadow 0.35s ease;
+        }
+
+        /* Low-time timer */
+        .low-time .timer-display {
+            color: var(--accent);
+            text-shadow: 0 0 28px rgba(255, 0, 85, 0.55);
+            animation: timerBeat 0.5s ease-in-out infinite alternate;
+        }
+        @keyframes timerBeat {
+            from { transform: scale(1); }
+            to   { transform: scale(1.06); }
+        }
+
+        /* --- OVERALL PROGRESS BAR --- */
+        .overall-progress {
+            width: 100%;
+            margin-bottom: 14px;
+        }
+        .progress-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.72em;
+            color: #555;
+            margin-bottom: 5px;
+            letter-spacing: 0.5px;
+        }
+        .progress-track {
+            width: 100%;
+            height: 4px;
+            background: #1e1e1e;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #00d4ff);
+            border-radius: 2px;
+            transition: width 1s linear;
+            box-shadow: 0 0 8px rgba(0,242,96,0.4);
+        }
+
+        /* --- BADGES --- */
+        .badge {
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 0.72em;
+            margin-bottom: 6px;
+            letter-spacing: 1.5px;
+            transition: all 0.3s ease;
+        }
+        .badge-work {
+            background: rgba(0,242,96,0.12);
+            color: var(--primary);
+            box-shadow: 0 0 12px rgba(0,242,96,0.15);
+        }
+        .badge-rest {
+            background: rgba(5,117,230,0.12);
+            color: var(--secondary);
+            box-shadow: 0 0 12px rgba(5,117,230,0.15);
+        }
+        .badge-neutral { background: #222; color: #777; }
+        .badge-pop {
+            animation: badgePop 0.35s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        @keyframes badgePop {
+            from { transform: scale(0.75); opacity: 0; }
+            to   { transform: scale(1);    opacity: 1; }
+        }
+
+        /* Motivational text */
+        .motivational {
+            font-size: 0.78em;
+            color: #444;
+            height: 18px;
+            margin-bottom: 4px;
+            font-style: italic;
+            letter-spacing: 0.5px;
+            animation: msgFadeIn 0.6s ease;
+        }
+        @keyframes msgFadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Rest state */
+        .state-rest .timer-display { color: var(--secondary); text-shadow: 0 0 28px rgba(5,117,230,0.45); }
+        .state-rest #progressRing  { stroke: var(--secondary); }
+        .state-rest .visual-glow   { background: var(--secondary); }
+
+        /* --- BUTTONS --- */
+        .btn {
+            background: linear-gradient(90deg, #00f260, #0575E6);
+            border: none;
+            padding: 18px 30px;
+            color: white;
+            font-size: 1.05em;
+            border-radius: 50px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            box-shadow: 0 6px 22px rgba(0,242,96,0.28);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        /* Shimmer sweep */
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: -60%; left: -60%;
+            width: 55%; height: 220%;
+            background: rgba(255,255,255,0.18);
+            transform: skewX(-20deg);
+            animation: btnSweep 2.8s ease-in-out infinite;
+        }
+        @keyframes btnSweep {
+            0%, 100% { left: -60%; opacity: 0; }
+            45%       { opacity: 1; }
+            50%       { left: 130%; opacity: 0; }
+        }
+        .btn:hover  { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,242,96,0.38); }
+        .btn:active { transform: scale(0.97); box-shadow: 0 3px 10px rgba(0,242,96,0.2); }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid #2a2a2a;
+            box-shadow: none;
+            font-size: 0.88em;
+            color: #666;
+        }
+        .btn-secondary::after  { display: none; }
+        .btn-secondary:hover   { background: rgba(255,255,255,0.07); color: #aaa; box-shadow: none; }
+
+        /* --- SASS MODE TOGGLE --- */
+        .sass-toggle-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            margin: 18px 0;
+            padding: 14px 18px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            transition: border-color 0.3s ease;
+        }
+        .sass-toggle-wrapper:hover { border-color: rgba(255, 255, 255, 0.4); }
+        .sass-toggle-label {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+        }
+        .sass-title { color: #fff; font-size: 0.9em; font-weight: 500; }
+        .sass-desc { color: rgba(255, 255, 255, 0.7); font-size: 0.72em; margin-top: 4px; font-weight: 300; }
+
+        /* Switch UI */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 26px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #2a2a2a;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #ffffff; box-shadow: 0 0 12px rgba(255,255,255,0.4); }
+        input:checked + .slider:before { transform: translateX(22px); background-color: var(--dark); }
+        input:focus-visible + .slider { outline: 3px solid var(--primary); outline-offset: 2px; }
+
+        /* --- SELECTS --- */
+        select {
+            width: 100%; padding: 14px 40px 14px 14px; margin-bottom: 10px;
+            background: #141414; color: white; border: 1px solid #2a2a2a;
+            border-radius: 12px; font-size: 1em; appearance: none;
+            font-family: inherit;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath d='M1 1l5 4.5L11 1' stroke='%2300f260' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+        }
+        select:focus  { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(0,242,96,0.14); }
+        select:hover  { border-color: #3a3a3a; }
+
+        label {
+            display: block;
+            text-align: left;
+            margin-top: 14px;
+            color: #666;
+            font-size: 0.78em;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        /* --- COUNTDOWN OVERLAY --- */
+        #countdownOverlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.78);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            backdrop-filter: blur(6px);
+        }
+        .countdown-label {
+            font-size: 0.85em;
+            color: #555;
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+        .countdown-num {
+            font-size: clamp(100px, 22vmin, 180px);
+            line-height: 1;
+            color: var(--primary);
+            text-shadow: 0 0 60px rgba(0,242,96,0.6), 0 0 120px rgba(0,242,96,0.3);
+            animation: countBounce 1s cubic-bezier(0.34,1.56,0.64,1) both;
+        }
+        .countdown-num.go {
+            font-size: clamp(60px, 14vmin, 110px);
+            color: #fff;
+            text-shadow: 0 0 40px rgba(255,255,255,0.5);
+        }
+        @keyframes countBounce {
+            0%   { transform: scale(1.9); opacity: 0; }
+            30%  { transform: scale(1);   opacity: 1; }
+            75%  { transform: scale(1);   opacity: 1; }
+            100% { transform: scale(0.75); opacity: 0; }
+        }
+
+        /* --- COMPLETE OVERLAY --- */
+        #completeOverlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.88);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            backdrop-filter: blur(10px);
+        }
+        .complete-box {
+            text-align: center;
+            padding: 40px 30px;
+            animation: completePop 0.7s cubic-bezier(0.34,1.56,0.64,1) both;
+            max-width: 380px;
+            width: 90%;
+        }
+        @keyframes completePop {
+            from { transform: scale(0.5) translateY(40px); opacity: 0; }
+            to   { transform: scale(1) translateY(0);      opacity: 1; }
+        }
+        .complete-title {
+            font-size: 2.2em;
+            background: linear-gradient(90deg, var(--primary), #00d4ff, var(--secondary));
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: titleShimmer 2s linear infinite;
+            margin-bottom: 8px;
+        }
+        .complete-stats {
+            color: #666;
+            font-size: 0.92em;
+            margin: 6px 0;
+        }
+        .complete-stats strong { color: #aaa; }
+
+        /* Confetti */
+        .confetti-piece {
+            position: fixed;
+            pointer-events: none;
+            z-index: 199;
+            animation: confettiFall linear both;
+        }
+        @keyframes confettiFall {
+            0%   { transform: translateY(-5vh) rotate(0deg) scale(1);    opacity: 1; }
+            80%  { opacity: 1; }
+            100% { transform: translateY(105vh) rotate(var(--spin, 720deg)) scale(0.5); opacity: 0; }
+        }
+
+        /* --- TIP BANNER --- */
+        .tip-banner {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20, 20, 20, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 242, 96, 0.3);
+            border-radius: 40px;
+            padding: 8px 20px 8px 8px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            z-index: 90; /* Right below full-screen overlays */
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 15px rgba(0, 242, 96, 0.05);
+            text-decoration: none;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, opacity 0.38s ease;
+        }
+        .tip-banner:hover {
+            transform: translateX(-50%) translateY(-3px);
+            box-shadow: 0 6px 25px rgba(0,0,0,0.6), 0 0 20px rgba(0, 242, 96, 0.15);
+            border-color: rgba(0, 242, 96, 0.6);
+        }
+        .tip-banner img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--primary);
+        }
+        .tip-banner-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.3;
+            text-align: left;
+        }
+        .tip-banner-title {
+            color: #fff;
+            font-size: 0.85em;
+        }
+        .tip-banner-handle {
+            color: var(--primary);
+            font-size: 0.75em;
+            letter-spacing: 0.5px;
+        }
+
+        /* Utility */
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div id="loadingScreen" class="overlay-screen">
+    <svg class="app-logo-large" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+            <linearGradient id="neonGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#0575E6" />
+                <stop offset="100%" stop-color="#00f260" />
+            </linearGradient>
+            <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="1.5" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+        </defs>
+        <!-- Sparkles -->
+        <g fill="url(#neonGrad)" filter="url(#neonGlow)">
+            <path d="M 12 50 Q 18 50 18 44 Q 18 50 24 50 Q 18 50 18 56 Q 18 50 12 50 Z" />
+            <path d="M 82 58 Q 88 58 88 52 Q 88 58 94 58 Q 88 58 88 64 Q 88 58 82 58 Z" />
+            <path d="M 20 24 Q 24 24 24 20 Q 24 24 28 24 Q 24 24 24 28 Q 24 24 20 24 Z" />
+            <path d="M 72 20 Q 75 20 75 17 Q 75 20 78 20 Q 75 20 75 23 Q 75 20 72 20 Z" />
+        </g>
+        <!-- Main Graphic -->
+        <g stroke="url(#neonGrad)" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" filter="url(#neonGlow)">
+            <!-- Suitcase Handle -->
+            <path d="M 38 24 V 14 C 38 10 40 8 44 8 H 56 C 60 8 62 10 62 14 V 24" />
+            <!-- Suitcase Body -->
+            <rect x="20" y="24" width="60" height="55" rx="8" />
+            <line x1="20" y1="38" x2="80" y2="38" />
+            <!-- Wheels -->
+            <circle cx="32" cy="85" r="4.5" />
+            <circle cx="68" cy="85" r="4.5" />
+            <!-- Flexed Bicep -->
+            <path d="M 30 65 C 25 55, 30 40, 40 38 C 48 36, 55 45, 52 50 C 60 45, 70 50, 68 60 C 65 68, 55 70, 48 65 C 45 62, 40 65, 30 65 Z" />
+            <path d="M 52 50 C 50 55, 45 58, 40 58" />
+        </g>
+    </svg>
+    <h1 class="loading-title">Welcome to the Travel Trainer App</h1>
+</div>
+
+<main id="mainApp" class="hidden">
+    <div id="countdownOverlay" class="hidden" aria-live="assertive">
+        <div class="countdown-label">Get Ready</div>
+        <div class="countdown-num" id="countdownNum">3</div>
+    </div>
+
+    <div id="completeOverlay" class="hidden" aria-live="assertive" role="alert">
+        <div class="complete-box">
+            <div class="complete-title">COMPLETE!</div>
+            <p class="complete-stats" id="completeStatA"></p>
+            <p class="complete-stats" id="completeStatB"></p>
+            <button class="btn" style="max-width:260px;margin-top:22px;" onclick="location.reload()">Do It Again</button>
+        </div>
+    </div>
+
+    <div class="container" id="setupScreen">
+        <svg class="app-logo-small" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs>
+                <linearGradient id="neonGradSmall" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#0575E6" />
+                    <stop offset="100%" stop-color="#00f260" />
+                </linearGradient>
+                <filter id="neonGlowSmall" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="1.5" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+            </defs>
+            <!-- Sparkles -->
+            <g fill="url(#neonGradSmall)" filter="url(#neonGlowSmall)">
+                <path d="M 12 50 Q 18 50 18 44 Q 18 50 24 50 Q 18 50 18 56 Q 18 50 12 50 Z" />
+                <path d="M 82 58 Q 88 58 88 52 Q 88 58 94 58 Q 88 58 88 64 Q 88 58 82 58 Z" />
+                <path d="M 20 24 Q 24 24 24 20 Q 24 24 28 24 Q 24 24 24 28 Q 24 24 20 24 Z" />
+                <path d="M 72 20 Q 75 20 75 17 Q 75 20 78 20 Q 75 20 75 23 Q 75 20 72 20 Z" />
+            </g>
+            <!-- Main Graphic -->
+            <g stroke="url(#neonGradSmall)" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" filter="url(#neonGlowSmall)">
+                <path d="M 38 24 V 14 C 38 10 40 8 44 8 H 56 C 60 8 62 10 62 14 V 24" />
+                <rect x="20" y="24" width="60" height="55" rx="8" />
+                <line x1="20" y1="38" x2="80" y2="38" />
+                <circle cx="32" cy="85" r="4.5" />
+                <circle cx="68" cy="85" r="4.5" />
+                <path d="M 30 65 C 25 55, 30 40, 40 38 C 48 36, 55 45, 52 50 C 60 45, 70 50, 68 60 C 65 68, 55 70, 48 65 C 45 62, 40 65, 30 65 Z" />
+                <path d="M 52 50 C 50 55, 45 58, 40 58" />
+            </g>
+        </svg>
+        <h1 class="app-title">Travel Trainer</h1>
+        <p class="subtitle">Training for here ... there ... and everywhere.</p>
+
+        <label for="style">Select your Class</label><br>
+        <select id="style" onchange="updateStylePreview()">
+            <option value="standard">Standard (45s Work / 15s Rest)</option>
+            <option value="tabata">Tabata (20s Work / 10s Rest)</option>
+            <option value="sprint">Sprint Intervals (1:3 Cardio Focus)</option>
+            <option value="pyramid">Pyramid (30s-45s-60s-45s-30s)</option>
+            <option value="little">The Little Method (60s / 75s x 12)</option>
+            <option value="302010">30-20-10 (Low-Mod-High Intensity)</option>
+            <option value="fartlek">Fartlek (Randomized Speed Play)</option>
+            <option value="core">Core Crusher (Strictly Core Workouts)</option>
+        </select>
+        <div class="style-preview" id="stylePreview" aria-live="polite"></div>
+
+        <label for="difficulty">Difficulty Level</label><br>
+        <select id="difficulty">
+            <option value="all">Mix Everything</option>
+            <option value="easy">Easy / Mobility</option>
+            <option value="medium" selected>Medium / Strength</option>
+            <option value="hard">Hard / HIIT</option>
+        </select>
+
+        <label for="duration">Duration (Minutes)</label><br>
+        <select id="duration">
+            <option value="5">5 Minutes</option>
+            <option value="10">10 Minutes</option>
+            <option value="20">20 Minutes</option>
+            <option value="30">30 Minutes</option>
+        </select>
+
+        <div class="sass-toggle-wrapper">
+            <div class="sass-toggle-label">
+                <span class="sass-title">Sass Mode</span>
+                <span class="sass-desc">Brutal, sarcastic motivation.</span>
+            </div>
+            <label class="switch">
+                <input type="checkbox" id="sassToggle" aria-label="Toggle Sass Mode">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <button class="btn" onclick="startWorkout()">START WORKOUT</button>
+    </div>
+
+    <div class="container hidden" id="workoutScreen" aria-live="polite">
+        <div class="overall-progress" aria-hidden="true">
+            <div class="progress-meta">
+                <span id="progressLabel">Step 1</span>
+                <span id="progressPct">0%</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" id="progressFill" style="width:0%"></div>
+            </div>
+        </div>
+
+        <div class="badge badge-neutral badge-pop" id="statusBadge" role="status">GET READY</div>
+        <div class="badge" id="nextBadge" style="background:transparent;font-size:0.68em;color:#444;padding:3px 10px;"></div>
+
+        <div class="motivational" id="motivational" role="status">&nbsp;</div>
+
+        <h2 id="exerciseName">Prepare Yourself</h2>
+
+        <div class="visual-container">
+            <div class="visual-glow" id="visualGlow" aria-hidden="true"></div>
+            <img id="visualTarget" class="visual-img" src="" alt="Exercise Demo">
+            <div class="visual-spinner" id="visualSpinner" aria-hidden="true"></div>
+
+            <div class="preview-bubble" id="previewBubble" aria-hidden="true">
+                <img id="previewImg" src="" alt="Up Next">
+                <div class="preview-label">Preview</div>
+            </div>
+
+            <svg class="timer-ring-svg" viewBox="0 0 300 300" aria-hidden="true">
+                <circle
+                    stroke="#1a1a1a"
+                    stroke-width="8"
+                    fill="transparent"
+                    r="140" cx="150" cy="150"
+                />
+                <circle
+                    id="progressRing"
+                    stroke="#00f260"
+                    stroke-width="8"
+                    fill="transparent"
+                    r="140" cx="150" cy="150"
+                />
+            </svg>
+        </div>
+
+        <div class="timer-display" id="timer" aria-label="Time remaining in seconds">–</div>
+
+        <button class="btn btn-secondary" onclick="endSession()">End Session</button>
+    </div>
+</main>
+
+<!-- Tip Banner (Now only on home screen) -->
+<a id="tipBanner" href="https://venmo.com/u/matthew-preven" target="_blank" rel="noopener noreferrer" class="tip-banner">
+    <img src="https://media.licdn.com/dms/image/v2/D5603AQF7PHLPti7lxg/profile-displayphoto-scale_400_400/B56ZueduaMG0Ag-/0/1767890153529?e=1773273600&v=beta&t=t5FFphZksvfy4fyQUX50BZqpnkgMUEBLcR1nEFg_S0A" alt="Matthew Preven">
+    <div class="tip-banner-text">
+        <span class="tip-banner-title">Tip the Developer</span>
+        <span class="tip-banner-handle">Venmo @matthew-preven</span>
+    </div>
+</a>
+
+<script>
+// ============================================================
+//  LOADING SCREEN INIT
+// ============================================================
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        const loader = document.getElementById('loadingScreen');
+        const main = document.getElementById('mainApp');
+        loader.classList.add('fading-out');
+        setTimeout(() => {
+            loader.classList.add('hidden');
+            main.classList.remove('hidden');
+        }, 500); // Wait for fade transition
+    }, 2000); // 2 second display
+});
+
+// ============================================================
+//  WEB AUDIO
+// ============================================================
+let _audioCtx = null;
+function getCtx() {
+    if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return _audioCtx;
+}
+function tone(freq, dur, vol = 0.22, type = 'sine') {
+    try {
+        const ctx = getCtx();
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = freq;
+        osc.type = type;
+        gain.gain.setValueAtTime(vol, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+        osc.start(); osc.stop(ctx.currentTime + dur);
+    } catch(_) {}
+}
+function beepWarn()  { tone(660, 0.07, 0.18); }
+function beepStart() { tone(880, 0.1, 0.28); setTimeout(() => tone(1100, 0.12, 0.22), 130); }
+function beepComplete() {
+    [[523,0], [659,130], [784,260], [1047,400]].forEach(([f,d]) =>
+        setTimeout(() => tone(f, d === 400 ? 0.35 : 0.12, 0.28), d));
+}
+function beepCountdown() { tone(440, 0.1, 0.2); }
+
+// ============================================================
+//  STYLE PREVIEW
+// ============================================================
+const styleMeta = {
+    standard: 'Classic HIIT — <span>45s work</span>, <span>15s rest</span>. Great all-around burn.',
+    tabata:   'High-intensity Tabata — <span>20s max effort</span>, <span>10s rest</span>. Brutal.',
+    sprint:   'Cardio-only — <span>60s sprint</span> then <span>3 min recovery</span>. 1:3 ratio.',
+    pyramid:  'Ascending &amp; descending — <span>30→45→60→45→30s</span> with big rest sets.',
+    little:   'The Little Method — <span>60s moderate / 75s low intensity</span> × 12 rounds.',
+    '302010': 'Triple-tier — <span>30s easy → 20s moderate → 10s max</span>. Per minute.',
+    fartlek:  'Randomized speed play — <span>30–90s</span> random work bursts + 30s jog rest.',
+    core:     'Core Crusher — <span>40s work</span>, <span>20s rest</span>. 100% Core focus to build midline strength.'
+};
+function updateStylePreview() {
+    const v = document.getElementById('style').value;
+    document.getElementById('stylePreview').innerHTML = styleMeta[v] || '';
+}
+updateStylePreview();
+
+// ============================================================
+//  MOTIVATIONAL MESSAGES
+// ============================================================
+const MSGS_WORK = [
+    'Keep it up!', 'Push harder!', 'You got this!', 'Stay strong!',
+    'Every rep counts!', "Don't quit now!", 'Eyes on the goal!', 'Feel the burn!'
+];
+const MSGS_REST = [
+    'Breathe deeply.', 'You earned this.', 'Recovery is training.',
+    'Reset. Reload. Go.', 'Catch your breath.', 'Almost there.'
+];
+
+const SASSY_WORK = [
+    'Quick to quit? I thought you were better than that.',
+    'Are you even trying?',
+    'Sweat, not tears!',
+    "I've seen sloths with more hustle.",
+    'Is that your max effort? Cute.',
+    'Less crying, more moving.',
+    'Did you come here to nap?'
+];
+
+const SASSY_REST = [
+    'Finally, you can stop panting.',
+    "Don't get too comfortable.",
+    'Enjoy your precious 10 seconds.',
+    'Try to look less pathetic on the next set.',
+    'Catch your breath, you sound like a pug.',
+    'Tick tock. Time to suffer again soon.'
+];
+
+// ============================================================
+//  GIF LIBRARY
+// ============================================================
+const gifLibrary = {
+    "Marching in Place":     "https://media1.tenor.com/m/lPdHewBMkgMAAAAC/marching-in-place.gif",
+    "Arm Circles":           "https://media1.tenor.com/m/V6SWTCpJ5q8AAAAC/arm-circles.gif",
+    "Torso Twists":          "https://media.giphy.com/media/YRbZyShqFFnfjoWNoo/giphy.gif",
+    "Glute Bridges":         "https://media.tenor.com/16591507/glute-bridge-exercise-workout.gif",
+    "Push-ups":              "https://media.tenor.com/gI-8qCUEko8AAAAC/pushup.gif",
+    "High Knees":            "https://upload.wikimedia.org/wikipedia/commons/6/6b/Highknees_wbs.gif",
+    "Butt Kicks":            "https://media1.tenor.com/m/a0Mz-CDatZ0AAAAC/exercise-workout.gif",
+    "Jumping Jacks":         "https://artimg.gympik.com/articles/wp-content/uploads/2020/02/jumping-jacks-gif-5.gif",
+    "Side Leg Raises":       "https://i.pinimg.com/originals/01/44/55/0144550f66a67fe3da887187edc33ab0.gif",
+    "Bird Dog":              "https://media1.tenor.com/m/6nO5406JCHIAAAAC/bird-dog.gif",
+    "Squats":                "https://images.squarespace-cdn.com/content/v1/54f9e84de4b0d13f30bba4cb/1530743652042-8AW6T0MPM6Q0JYEV6AO9/image-asset.gif",
+    "Shadow Boxing":         "https://media2.giphy.com/media/v1.Y2lkPTZjMDliOTUyZ2YwdGVhd2RrMGs5YWt3MG1zemlzMmUzdnA5Mmlmd2QxN2NsODd3eiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/l0HUpomrVfQI6cRSo/giphy.gif",
+    "Cobra Stretch":         "https://media.giphy.com/media/7JpuUpNZBrhsdU7V1I/giphy.gif",
+    "Dead Bug":              "https://media1.tenor.com/m/DN23029huGsAAAAC/deadbug-core.gif",
+    "Boxer Shuffle":         "https://media1.tenor.com/m/6YxwqjDrnbsAAAAC/entrenar-rocky.gif",
+    "Heel Touches":          "https://media1.tenor.com/m/wa5W6fq1x2AAAAAC/heel-touch.gif",
+    "Standing Side Crunch":  "https://media1.tenor.com/m/D2iZ15D3eOsAAAAC/standing-side-crunch-standing-abs.gif",
+    "Cat Cow":               "https://media1.tenor.com/m/v7sW4j2hC9kAAAAC/cat-cow-pose.gif",
+    "Lunges":                "https://media.post.rvohealth.io/wp-content/uploads/2023/08/AltruisticFantasticCub-size_restricted-1.gif",
+    "Plank":                 "https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExd2MxMTJ3OTY3dzE4ODdwd2Vod2JoNGo4ZXRreGllaDhudXZxbDF0cyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/d3mlADRlF7SMFQRy/giphy.gif",
+    "Mountain Climbers":     "https://downloads.ctfassets.net/6ilvqec50fal/2Zb0Rud260lcxB6hMmNYKr/0d47f0ed5c7d0744f043eaddda18532a/Mountain_Climbers.gif",
+    "Bicycle Crunches":      "https://media.self.com/photos/57e054cf1051c2bb51c0255e/master/w_1600%2Cc_limit/BICYCLES.gif",
+    "Leg Raises":            "https://cdn.jefit.com/assets/img/exercises/gifs/44.gif",
+    "Russian Twists":        "https://media1.tenor.com/m/XYqU8XdKQPoAAAAC/abs-twist.gif",
+    "Tricep Dips":           "https://media1.tenor.com/m/B1KE8Bne6f4AAAAC/noequipmentexercisesmen-tricepdips.gif",
+    "Side Plank":            "https://media1.tenor.com/m/WVSGsKLKjhcAAAAC/pilates-sideplank.gif",
+    "Superman":              "https://media1.tenor.com/m/mju5ewyZa0UAAAAC/noequipmentexercisesmen-supermans.gif",
+    "Bear Crawl":            "https://hips.hearstapps.com/hmg-prod/images/workouts/2016/08/bearcrawlinplace-1472057021.gif",
+    "Inchworms":             "https://media.giphy.com/media/vRJWQkV1MdoubEMcSL/giphy.gif",
+    "V-Sits":                "https://media1.tenor.com/m/nq83LV8otg4AAAAC/3way-v-up-abs-exercises.gif",
+    "Skaters":               "https://media1.tenor.com/m/vmg0lXEtpvUAAAAC/rollerfitness-rollerfit.gif",
+    "Reverse Crunches":      "https://media1.tenor.com/m/6pCswVqg3wwAAAAC/reverse-crunches.gif",
+    "Plank Jacks":           "https://media1.tenor.com/m/q6J1-Wqg3wwAAAAC/plank-jacks.gif",
+    "Scissor Kicks":         "https://media1.tenor.com/m/Q8KkM1Bq5k8AAAAC/flutter-kicks.gif",
+    "Side Plank Dips":       "https://media1.tenor.com/m/Q_1yQ4sT8j0AAAAC/side-plank-hip-lifts.gif",
+    "Cross-Body Climbers":   "https://media1.tenor.com/m/2y4J1-Wqg3wwAAAAC/cross-body-mountain-climbers.gif",
+    "Burpees":               "https://joshuaspodek.com/wp-content/uploads/2016/07/burpee.gif",
+    "Jump Squats":           "https://media1.tenor.com/m/ClEeYj2r8qkAAAAC/noequipmentexercisesmen-plyometricsquats.gif",
+    "Jump Lunges":           "https://media1.tenor.com/m/Pwu67wJ3bR4AAAAC/jump-lunges.gif",
+    "Diamond Push-ups":      "https://media1.tenor.com/m/7JnImp72Jw0AAAAC/diamondpushups-noequipmentexercisesmen.gif",
+    "Spiderman Push-ups":    "https://media1.tenor.com/m/0sv4MPc0IvMAAAAC/spiderman-workout.gif",
+    "Archer Push-ups":       "https://media1.tenor.com/m/4L-OjAIKkWIAAAAC/pushup-andrewlian.gif",
+    "Pistol Squats":         "https://media1.tenor.com/m/ENMApuzr7lEAAAAC/pistolsquats-noequipmentexercisesmen.gif",
+    "Tuck Jumps":            "https://media1.tenor.com/m/QX9_3P-1daYAAAAC/ninja-tuck-jump-mongymenligne.gif",
+    "Broad Jumps":           "https://media1.tenor.com/m/UKWhSXzqoO4AAAAC/squat-jumps.gif",
+    "Single Leg Deadlift":   "https://media1.tenor.com/m/R7UZPOgJdmIAAAAC/single-leg-dead-lift-reverse-lunges.gif",
+    "L-Sit":                 "https://media.giphy.com/media/59DLVjZKtAqQZI0UTG/giphy.gif",
+    "V-Ups":                 "https://media1.tenor.com/m/nq83LV8otg4AAAAC/3way-v-up-abs-exercises.gif",
+    "Frog Jumps":            "https://media1.tenor.com/m/ClEeYj2r8qkAAAAC/noequipmentexercisesmen-plyometricsquats.gif",
+    "Star Jumps":            "https://media1.tenor.com/m/WR6yv2M2XxoAAAAC/star-jump-exercise.gif",
+    "Yoga Push-Ups":         "https://media1.tenor.com/m/TPS7_Jn3-TsAAAAC/anime-exercise.gif",
+    "Cossack Squats":        "https://media1.tenor.com/m/hiusknnY54UAAAAC/lateral-squat-stretching.gif",
+    "Bulgarian Split Squats":"https://media1.tenor.com/m/Atud3-yggTsAAAAC/bodyweight-split-squats.gif",
+    "Explosive Step-ups":    "https://media1.tenor.com/m/7VIUFL9YA84AAAAC/step-up.gif",
+    "Sprint in Place":       "https://media1.tenor.com/m/zx3Lv-ZWwmYAAAAC/high-knees-work-out.gif",
+    "Windshield Wipers":     "https://media1.tenor.com/m/2y4J1-Wqg3wwAAAAC/windshield-wipers-abs.gif",
+    "Commando Planks":       "https://media1.tenor.com/m/1y4J1-Wqg3wwAAAAC/commando-plank.gif",
+    "Hollow Body Rock":      "https://media1.tenor.com/m/3y4J1-Wqg3wwAAAAC/hollow-body-rock.gif",
+    "Jackknife Sit-ups":     "https://media1.tenor.com/m/4y4J1-Wqg3wwAAAAC/jackknife-situp.gif"
+};
+
+// ============================================================
+//  EXERCISE DATABASE
+// ============================================================
+const exerciseDB = [
+    { name:"Marching in Place",   type:"cardio",   difficulty:"easy",   core: false, gif:gifLibrary["Marching in Place"] },
+    { name:"Arm Circles",         type:"strength", difficulty:"easy",   core: false, gif:gifLibrary["Arm Circles"] },
+    { name:"Torso Twists",        type:"cardio",   difficulty:"easy",   core: true,  gif:gifLibrary["Torso Twists"] },
+    { name:"Glute Bridges",       type:"strength", difficulty:"easy",   core: false, gif:gifLibrary["Glute Bridges"] },
+    { name:"High Knees",          type:"cardio",   difficulty:"easy",   core: false, gif:gifLibrary["High Knees"] },
+    { name:"Butt Kicks",          type:"cardio",   difficulty:"easy",   core: false, gif:gifLibrary["Butt Kicks"] },
+    { name:"Step Jacks",          type:"cardio",   difficulty:"easy",   core: false, gif:gifLibrary["Jumping Jacks"] },
+    { name:"Side Leg Raises",     type:"strength", difficulty:"easy",   core: false, gif:gifLibrary["Side Leg Raises"] },
+    { name:"Bird Dog",            type:"strength", difficulty:"easy",   core: true,  gif:gifLibrary["Bird Dog"] },
+    { name:"Chair Squats",        type:"strength", difficulty:"easy",   core: false, gif:gifLibrary["Squats"] },
+    { name:"Shadow Boxing",       type:"cardio",   difficulty:"easy",   core: false, gif:gifLibrary["Shadow Boxing"] },
+    { name:"Cobra Stretch",       type:"strength", difficulty:"easy",   core: false, gif:gifLibrary["Cobra Stretch"] },
+    { name:"Dead Bug",            type:"strength", difficulty:"easy",   core: true,  gif:gifLibrary["Dead Bug"] },
+    { name:"Boxer Shuffle",       type:"cardio",   difficulty:"easy",   core: false, gif:gifLibrary["Boxer Shuffle"] },
+    { name:"Heel Touches",        type:"strength", difficulty:"easy",   core: true,  gif:gifLibrary["Heel Touches"] },
+    { name:"Standing Side Crunch",type:"strength", difficulty:"easy",   core: true,  gif:gifLibrary["Standing Side Crunch"] },
+    { name:"Cat Cow",             type:"strength", difficulty:"easy",   core: true,  gif:gifLibrary["Cat Cow"] },
+    { name:"Incline Push-ups",    type:"strength", difficulty:"easy",   core: false, gif:gifLibrary["Push-ups"] },
+
+    { name:"Push-ups",            type:"strength", difficulty:"medium", core: false, gif:gifLibrary["Push-ups"] },
+    { name:"Squats",              type:"strength", difficulty:"medium", core: false, gif:gifLibrary["Squats"] },
+    { name:"Lunges",              type:"strength", difficulty:"medium", core: false, gif:gifLibrary["Lunges"] },
+    { name:"Plank",               type:"strength", difficulty:"medium", core: true,  gif:gifLibrary["Plank"] },
+    { name:"Mountain Climbers",   type:"cardio",   difficulty:"medium", core: true,  gif:gifLibrary["Mountain Climbers"] },
+    { name:"Jumping Jacks",       type:"cardio",   difficulty:"medium", core: false, gif:gifLibrary["Jumping Jacks"] },
+    { name:"Bicycle Crunches",    type:"strength", difficulty:"medium", core: true,  gif:gifLibrary["Bicycle Crunches"] },
+    { name:"Leg Raises",          type:"strength", difficulty:"medium", core: true,  gif:gifLibrary["Leg Raises"] },
+    { name:"Russian Twists",      type:"strength", difficulty:"medium", core: true,  gif:gifLibrary["Russian Twists"] },
+    { name:"Tricep Dips",         type:"strength", difficulty:"medium", core: false, gif:gifLibrary["Tricep Dips"] },
+    { name:"Side Plank",          type:"strength", difficulty:"medium", core: true,  gif:gifLibrary["Side Plank"] },
+    { name:"Sumo Squats",         type:"strength", difficulty:"medium", core: false, gif:gifLibrary["Squats"] },
+    { name:"Curtsy Lunges",       type:"strength", difficulty:"medium", core: false, gif:gifLibrary["Lunges"] },
+    { name:"Flutter Kicks",       type:"strength", difficulty:"medium", core: true,  gif:gifLibrary["Scissor Kicks"] },
+    { name:"Superman",            type:"strength", difficulty:"medium", core: false, gif:gifLibrary["Superman"] },
+    { name:"Bear Crawl",          type:"cardio",   difficulty:"medium", core: false, gif:gifLibrary["Bear Crawl"] },
+    { name:"Inchworms",           type:"strength", difficulty:"medium", core: false, gif:gifLibrary["Inchworms"] },
+    { name:"Pike Push-ups",       type:"strength", difficulty:"medium", core: false, gif:gifLibrary["Push-ups"] },
+    { name:"V-Sits",              type:"strength", difficulty:"medium", core: true,  gif:gifLibrary["V-Sits"] },
+    { name:"Hip Thrusts",         type:"strength", difficulty:"medium", core: false, gif:gifLibrary["Glute Bridges"] },
+    { name:"Skaters",             type:"cardio",   difficulty:"medium", core: false, gif:gifLibrary["Skaters"] },
+    { name:"Reverse Crunches",    type:"strength", difficulty:"medium", core: true,  gif:gifLibrary["Reverse Crunches"] },
+    { name:"Plank Jacks",         type:"cardio",   difficulty:"medium", core: true,  gif:gifLibrary["Plank Jacks"] },
+    { name:"Side Plank Dips",     type:"strength", difficulty:"medium", core: true,  gif:gifLibrary["Side Plank Dips"] },
+    { name:"Scissor Kicks",       type:"strength", difficulty:"medium", core: true,  gif:gifLibrary["Scissor Kicks"] },
+    { name:"Cross-Body Climbers", type:"cardio",   difficulty:"medium", core: true,  gif:gifLibrary["Cross-Body Climbers"] },
+
+    { name:"Burpees",             type:"cardio",   difficulty:"hard",   core: false, gif:gifLibrary["Burpees"] },
+    { name:"Jump Squats",         type:"cardio",   difficulty:"hard",   core: false, gif:gifLibrary["Jump Squats"] },
+    { name:"Jump Lunges",         type:"cardio",   difficulty:"hard",   core: false, gif:gifLibrary["Jump Lunges"] },
+    { name:"Diamond Push-ups",    type:"strength", difficulty:"hard",   core: false, gif:gifLibrary["Diamond Push-ups"] },
+    { name:"Spiderman Push-ups",  type:"strength", difficulty:"hard",   core: false, gif:gifLibrary["Spiderman Push-ups"] },
+    { name:"Archer Push-ups",     type:"strength", difficulty:"hard",   core: false, gif:gifLibrary["Archer Push-ups"] },
+    { name:"Pistol Squats",       type:"strength", difficulty:"hard",   core: false, gif:gifLibrary["Pistol Squats"] },
+    { name:"Tuck Jumps",          type:"cardio",   difficulty:"hard",   core: false, gif:gifLibrary["Tuck Jumps"] },
+    { name:"Broad Jumps",         type:"cardio",   difficulty:"hard",   core: false, gif:gifLibrary["Broad Jumps"] },
+    { name:"Single Leg Deadlift", type:"strength", difficulty:"hard",   core: false, gif:gifLibrary["Single Leg Deadlift"] },
+    { name:"L-Sit",               type:"strength", difficulty:"hard",   core: true,  gif:gifLibrary["L-Sit"] },
+    { name:"V-Ups",               type:"strength", difficulty:"hard",   core: true,  gif:gifLibrary["V-Ups"] },
+    { name:"Frog Jumps",          type:"cardio",   difficulty:"hard",   core: false, gif:gifLibrary["Frog Jumps"] },
+    { name:"Star Jumps",          type:"cardio",   difficulty:"hard",   core: false, gif:gifLibrary["Star Jumps"] },
+    { name:"Yoga Push-Ups",       type:"strength", difficulty:"hard",   core: false, gif:gifLibrary["Yoga Push-Ups"] },
+    { name:"Cossack Squats",      type:"strength", difficulty:"hard",   core: false, gif:gifLibrary["Cossack Squats"] },
+    { name:"Bulgarian Split Squats",type:"strength",difficulty:"hard",  core: false, gif:gifLibrary["Bulgarian Split Squats"] },
+    { name:"Explosive Step-ups",  type:"cardio",   difficulty:"hard",   core: false, gif:gifLibrary["Explosive Step-ups"] },
+    { name:"Breakdancers",        type:"cardio",   difficulty:"hard",   core: false, gif:gifLibrary["Skaters"] },
+    { name:"Sprint in Place",     type:"cardio",   difficulty:"hard",   core: false, gif:gifLibrary["Sprint in Place"] },
+    { name:"Suicide Drills",      type:"cardio",   difficulty:"hard",   core: false, gif:gifLibrary["Sprint in Place"] },
+    { name:"Windshield Wipers",   type:"strength", difficulty:"hard",   core: true,  gif:gifLibrary["Windshield Wipers"] },
+    { name:"Commando Planks",     type:"strength", difficulty:"hard",   core: true,  gif:gifLibrary["Commando Planks"] },
+    { name:"Hollow Body Rock",    type:"strength", difficulty:"hard",   core: true,  gif:gifLibrary["Hollow Body Rock"] },
+    { name:"Jackknife Sit-ups",   type:"strength", difficulty:"hard",   core: true,  gif:gifLibrary["Jackknife Sit-ups"] }
+];
+
+// ============================================================
+//  TIMER / RING STATE
+// ============================================================
+const circleRadius    = 140;
+const circumference   = 2 * Math.PI * circleRadius;
+const progressRingEl  = document.getElementById('progressRing');
+progressRingEl.style.strokeDasharray  = `${circumference} ${circumference}`;
+progressRingEl.style.strokeDashoffset = circumference;
+
+function setRingProgress(pct) {
+    progressRingEl.style.strokeDashoffset = circumference - (pct / 100) * circumference;
+}
+
+// ============================================================
+//  WORKOUT STATE
+// ============================================================
+let workoutPlan    = [];
+let currentIndex   = 0;
+let timerInterval  = null;
+let timeLeft       = 0;
+let totalStepTime  = 0;
+let sessionStart   = null;
+
+const REST_IMG = "https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExb3ZyczMzOWJtNzNncTN1OGhrc3VvbnBmYTNtMDltcHEwbjBlM3VsdSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/RfYPNHT08TsegXGMLH/giphy.gif";
+
+// ============================================================
+//  BUILD PLAN (New Randomized / No-Repeat Generator)
+// ============================================================
+function buildPlan(style, diff, durationMins) {
+    // 1. Establish the valid pool based on Difficulty & Style
+    let pool = exerciseDB;
+    if (style === 'core') {
+        pool = exerciseDB.filter(e => e.core);
+    } else {
+        if (diff !== 'all') {
+            pool = exerciseDB.filter(e => e.difficulty === diff);
+        }
+        if (style === 'sprint') {
+            pool = pool.filter(e => e.type === 'cardio');
+        }
+    }
+    
+    // Safety check if pool is heavily restricted
+    if (pool.length < 3) pool = exerciseDB; 
+    
+    // Initial shuffle
+    pool = [...pool].sort(() => Math.random() - 0.5);
+
+    // 2. Setup "No-Repeat" Drawing Mechanism
+    let poolIdx = 0;
+    let lastDrawn = "";
+    function getUniqueEx() {
+        if (poolIdx >= pool.length) {
+            // Pool exhausted: reshuffle and start drawing again
+            pool.sort(() => Math.random() - 0.5);
+            poolIdx = 0;
+        }
+        let ex = pool[poolIdx++];
+        // Prevent back-to-back repeats if reshuffled immediately
+        if (ex.name === lastDrawn && pool.length > 1) {
+            let temp = ex;
+            ex = pool[poolIdx % pool.length];
+            pool[poolIdx % pool.length] = temp;
+        }
+        lastDrawn = ex.name;
+        return ex;
+    }
+
+    const plan = [{ name:"Get Ready", duration:5, type:'rest' }];
+
+    // 3. Dynamic Warmup Injection
+    let warmupMins = 0;
+    if (durationMins === 10) warmupMins = 1;
+    if (durationMins === 20) warmupMins = 2;
+    if (durationMins === 30) warmupMins = 3;
+
+    if (warmupMins > 0) {
+        let easyPool = exerciseDB.filter(e => e.difficulty === 'easy').sort(() => Math.random() - 0.5);
+        for (let i = 0; i < warmupMins * 2; i++) { // Two 30s exercises per minute
+            let ex = easyPool[i % easyPool.length];
+            plan.push({ ...ex, name: "WARMUP: " + ex.name, duration: 30, type: 'work' });
+        }
+    }
+
+    // Calculate time left for the actual working sets (-1 min for Cooldown)
+    let mainWorkMins = durationMins - warmupMins - 1;
+    if (mainWorkMins < 1) mainWorkMins = durationMins; 
+
+    // 4. Generate Main Training Block with Defined Set Breaks
+    if (style === 'standard') {
+        for (let i = 0; i < mainWorkMins; i++) {
+            plan.push({ ...getUniqueEx(), duration:45, type:'work' });
+            // Set Break every 5 reps (5 mins) instead of regular rest
+            if ((i + 1) % 5 === 0 && i !== mainWorkMins - 1) {
+                plan.push({ name:"Set Break", duration:60, type:'rest' });
+            } else {
+                plan.push({ name:"Rest", duration:15, type:'rest' });
+            }
+        }
+    } 
+    else if (style === 'tabata') {
+        const totalRounds = mainWorkMins * 2; // 2 Tabata intervals per minute
+        for (let i = 0; i < totalRounds; i++) {
+            plan.push({ ...getUniqueEx(), duration:20, type:'work' });
+            // Set Break after 8 rounds (1 full tabata block)
+            if ((i + 1) % 8 === 0 && i !== totalRounds - 1) {
+                plan.push({ name:"Tabata Block Break", duration:60, type:'rest' });
+            } else {
+                plan.push({ name:"Rest", duration:10, type:'rest' });
+            }
+        }
+    } 
+    else if (style === 'sprint') {
+        const rounds = Math.ceil(mainWorkMins / 4);
+        for (let i = 0; i < rounds; i++) {
+            let ex = getUniqueEx();
+            plan.push({ ...ex, name:`MAX SPRINT: ${ex.name}`, duration:60, type:'work' });
+            // Active recovery acts as the set break
+            plan.push({ name:"Active Recovery Block", duration:180, type:'rest' });
+        }
+    } 
+    else if (style === 'pyramid') {
+        const times = [30, 45, 60, 45, 30];
+        const sets  = Math.ceil(mainWorkMins / 4);
+        for (let s = 0; s < sets; s++) {
+            times.forEach(t => { plan.push({ ...getUniqueEx(), duration:t, type:'work' }); });
+            plan.push({ name:"Pyramid Completed Break", duration:60, type:'rest' });
+        }
+    } 
+    else if (style === 'little') {
+        const rounds = Math.ceil((mainWorkMins * 60) / 135); // 135s per round
+        for (let i = 0; i < rounds; i++) {
+            plan.push({ ...getUniqueEx(), duration:60, type:'work' });
+            plan.push({ name:"Low Intensity Recovery", duration:75, type:'rest' });
+        }
+    } 
+    else if (style === '302010') {
+        for (let i = 0; i < mainWorkMins; i++) {
+            plan.push({ ...getUniqueEx(), duration:30, type:'work' }); // Low
+            plan.push({ ...getUniqueEx(), duration:20, type:'work' }); // Mod
+            plan.push({ ...getUniqueEx(), duration:10, type:'work' }); // High
+            // Add a Set Break every 4 minutes
+            if ((i + 1) % 4 === 0 && i !== mainWorkMins - 1) {
+                plan.push({ name:"Block Recovery", duration:45, type:'rest' });
+            }
+        }
+    } 
+    else if (style === 'fartlek') {
+        let time = 0;
+        let sets = 0;
+        while (time < mainWorkMins * 60) {
+            const t = Math.floor(Math.random() * 61 + 30);
+            plan.push({ ...getUniqueEx(), duration:t, type:'work' });
+            sets++;
+            
+            if (sets % 5 === 0) {
+                plan.push({ name:"Extended Water Break", duration:60, type:'rest' });
+                time += (t + 60);
+            } else {
+                plan.push({ name:"Jog / Rest", duration:30, type:'rest' });
+                time += (t + 30);
+            }
+        }
+    } 
+    else if (style === 'core') {
+        for (let i = 0; i < mainWorkMins; i++) {
+            plan.push({ ...getUniqueEx(), duration:40, type:'work' });
+            // Set break every 5 core reps
+            if ((i + 1) % 5 === 0 && i !== mainWorkMins - 1) {
+                plan.push({ name:"Core Rest Break", duration:60, type:'rest' });
+            } else {
+                plan.push({ name:"Rest", duration:20, type:'rest' });
+            }
+        }
+    }
+
+    // 5. Universal Cooldown (1 Minute Total)
+    plan.push({ name: "COOL DOWN: Cat Cow", duration: 30, type: 'work', gif: gifLibrary["Cat Cow"] });
+    plan.push({ name: "COOL DOWN: Cobra Stretch", duration: 30, type: 'work', gif: gifLibrary["Cobra Stretch"] });
+
+    return plan;
+}
+
+// ============================================================
+//  START WORKOUT
+// ============================================================
+function startWorkout() {
+    const style    = document.getElementById('style').value;
+    const diff     = document.getElementById('difficulty').value;
+    const durMins  = parseInt(document.getElementById('duration').value);
+
+    workoutPlan  = buildPlan(style, diff, durMins);
+    currentIndex = 0;
+    sessionStart = Date.now();
+
+    const setup     = document.getElementById('setupScreen');
+    const workout   = document.getElementById('workoutScreen');
+    const tipBanner = document.getElementById('tipBanner');
+
+    setup.classList.add('screen-exit');
+    if (tipBanner) tipBanner.classList.add('screen-exit');
+
+    setTimeout(() => {
+        setup.classList.add('hidden');
+        setup.classList.remove('screen-exit');
+        if (tipBanner) {
+            tipBanner.classList.add('hidden');
+            tipBanner.classList.remove('screen-exit');
+        }
+        workout.classList.remove('hidden');
+        workout.classList.add('screen-enter');
+        updateOverallProgress();
+        showCountdown(() => runStep());
+    }, 380);
+}
+
+function endSession() {
+    clearInterval(timerInterval);
+    location.reload();
+}
+
+// ============================================================
+//  COUNTDOWN OVERLAY  (3 → 2 → 1 → GO!)
+// ============================================================
+function showCountdown(cb) {
+    const overlay = document.getElementById('countdownOverlay');
+    const numEl   = document.getElementById('countdownNum');
+    const seq     = ['3','2','1','GO!'];
+    let i = 0;
+    overlay.classList.remove('hidden');
+
+    function tick() {
+        if (i >= seq.length) {
+            overlay.classList.add('hidden');
+            cb();
+            return;
+        }
+        const val = seq[i];
+        numEl.textContent = val;
+        numEl.className   = 'countdown-num' + (val === 'GO!' ? ' go' : '');
+        // restart animation
+        numEl.style.animation = 'none';
+        void numEl.offsetWidth;
+        numEl.style.animation = 'countBounce 1s cubic-bezier(0.34,1.56,0.64,1) both';
+
+        if (val === 'GO!') beepStart(); else beepCountdown();
+        i++;
+        setTimeout(tick, 1000);
+    }
+    tick();
+}
+
+// ============================================================
+//  OVERALL PROGRESS
+// ============================================================
+function updateOverallProgress() {
+    const total = workoutPlan.length;
+    const done  = currentIndex;
+    const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressPct').textContent  = pct + '%';
+    document.getElementById('progressLabel').textContent =
+        `Step ${Math.min(done + 1, total)} of ${total}`;
+}
+
+// ============================================================
+//  RUN STEP
+// ============================================================
+function runStep() {
+    if (currentIndex >= workoutPlan.length) {
+        showComplete();
+        return;
+    }
+
+    const step   = workoutPlan[currentIndex];
+    const next   = workoutPlan[currentIndex + 1];
+    const screen = document.getElementById('workoutScreen');
+
+    updateOverallProgress();
+
+    // --- Badge ---
+    const badge = document.getElementById('statusBadge');
+    badge.className = 'badge badge-pop ' + (step.type === 'work' ? 'badge-work' : 'badge-rest');
+    
+    // Reset preview bubble immediately
+    const previewBubble = document.getElementById('previewBubble');
+    previewBubble.classList.remove('active');
+
+    // Pre-load next step image for preview
+    if (next) {
+        const nextSrc = next.type === 'rest' ? REST_IMG : (next.gif || 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800');
+        document.getElementById('previewImg').src = nextSrc;
+    }
+
+    // Label warmup and cooldown specifically 
+    if (step.name.includes("WARMUP")) {
+        badge.textContent = "WARMUP PHASE";
+    } else if (step.name.includes("COOL DOWN")) {
+        badge.textContent = "COOL DOWN";
+    } else {
+        badge.textContent = step.type === 'work' ? 'WORK PHASE' : 'RECOVER';
+    }
+
+    document.getElementById('nextBadge').textContent = next ? `Up Next: ${next.name}` : '';
+
+    // --- Motivational ---
+    const isSassy = document.getElementById('sassToggle').checked;
+    const workMsgs = isSassy ? SASSY_WORK : MSGS_WORK;
+    const restMsgs = isSassy ? SASSY_REST : MSGS_REST;
+    
+    const msgs    = step.type === 'work' ? workMsgs : restMsgs;
+    const motivEl = document.getElementById('motivational');
+    motivEl.style.animation = 'none';
+    void motivEl.offsetWidth;
+    motivEl.textContent     = msgs[Math.floor(Math.random() * msgs.length)];
+    motivEl.style.animation = 'msgFadeIn 0.6s ease';
+
+    // --- Exercise name ---
+    const nameEl = document.getElementById('exerciseName');
+    nameEl.classList.add('sliding-out');
+    setTimeout(() => {
+        nameEl.textContent = step.name;
+        nameEl.classList.remove('sliding-out');
+    }, 200);
+
+    // --- Visual / GIF ---
+    const imgEl   = document.getElementById('visualTarget');
+    const spinner = document.getElementById('visualSpinner');
+    const glow    = document.getElementById('visualGlow');
+
+    imgEl.alt = "Demonstration of " + step.name;
+    imgEl.classList.add('fading');
+    setTimeout(() => {
+        if (step.type === 'rest') {
+            screen.classList.add('state-rest');
+            imgEl.classList.add('animate-breathe');
+            imgEl.src = REST_IMG;
+        } else {
+            screen.classList.remove('state-rest');
+            imgEl.classList.remove('animate-breathe');
+            const src = step.gif || 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800';
+            spinner.classList.add('active');
+            imgEl.onload = () => spinner.classList.remove('active');
+            imgEl.onerror = () => spinner.classList.remove('active');
+            imgEl.src = src;
+        }
+        imgEl.classList.remove('fading');
+    }, 320);
+
+    // --- Timer ---
+    timeLeft      = step.duration;
+    totalStepTime = step.duration;
+
+    const timerEl = document.getElementById('timer');
+    timerEl.textContent = timeLeft;
+    setRingProgress(100);
+    screen.classList.remove('low-time');
+
+    if (timerInterval) clearInterval(timerInterval);
+
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        timerEl.textContent = timeLeft;
+        setRingProgress((timeLeft / totalStepTime) * 100);
+
+        if (timeLeft === 5 && next) {
+            previewBubble.classList.add('active');
+        }
+
+        if (timeLeft <= 5 && timeLeft > 0) {
+            screen.classList.add('low-time');
+            beepWarn();
+        }
+
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            screen.classList.remove('low-time');
+            currentIndex++;
+            runStep();
+        }
+    }, 1000);
+}
+
+// ============================================================
+//  WORKOUT COMPLETE
+// ============================================================
+function showComplete() {
+    clearInterval(timerInterval);
+    beepComplete();
+
+    const elapsed  = Math.round((Date.now() - sessionStart) / 60000);
+    const workDone = workoutPlan.filter(s => s.type === 'work').length;
+
+    document.getElementById('completeStatA').innerHTML =
+        `<strong>${workDone}</strong> exercises completed`;
+    document.getElementById('completeStatB').innerHTML =
+        `<strong>${elapsed}</strong> min${elapsed !== 1 ? 's' : ''} of movement`;
+
+    spawnConfetti();
+    document.getElementById('completeOverlay').classList.remove('hidden');
+}
+
+function spawnConfetti() {
+    const palette = ['#00f260','#0575E6','#ff0055','#ffcc00','#ff6b35','#b44fff'];
+    for (let i = 0; i < 90; i++) {
+        const el    = document.createElement('div');
+        const size  = Math.random() * 9 + 5;
+        const color = palette[Math.floor(Math.random() * palette.length)];
+        const spin  = (Math.random() * 900 + 360).toFixed(0) + 'deg';
+        const dur   = (Math.random() * 2 + 1.4).toFixed(2);
+        const delay = (Math.random() * 1.8).toFixed(2);
+        el.className = 'confetti-piece';
+        el.style.cssText = [
+            `left:${Math.random() * 100}vw`,
+            `width:${size}px`, `height:${size}px`,
+            `background:${color}`,
+            `border-radius:${Math.random() > 0.45 ? '50%' : '3px'}`,
+            `--spin:${spin}`,
+            `animation-duration:${dur}s`,
+            `animation-delay:${delay}s`
+        ].join(';');
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), (parseFloat(dur) + parseFloat(delay) + 0.5) * 1000);
+    }
+}
+</script>
+</body>
+</html>
