@@ -220,7 +220,7 @@
         }
         @keyframes glowBreath {
             0%, 100% { transform: scale(1);    opacity: 0.12; }
-            50%       { transform: scale(1.08); opacity: 0.22; }
+            50%      { transform: scale(1.08); opacity: 0.22; }
         }
 
         .visual-img {
@@ -334,6 +334,12 @@
             0%   { transform: scale(1); }
             50%  { transform: scale(1.03); }
             100% { transform: scale(1); }
+        }
+
+        /* Pause State Styling */
+        .is-paused .visual-glow,
+        .is-paused .animate-breathe {
+            animation-play-state: paused !important;
         }
 
         /* --- EXERCISE NAME --- */
@@ -492,6 +498,18 @@
         }
         .btn-secondary::after  { display: none; }
         .btn-secondary:hover   { background: rgba(255,255,255,0.07); color: #aaa; box-shadow: none; }
+
+        /* Button Group for Pause/End */
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            margin-top: 14px;
+        }
+        .btn-group .btn {
+            margin-top: 0; /* Reset margin inside flex container */
+            flex: 1;
+        }
 
         /* --- SASS MODE TOGGLE --- */
         .sass-toggle-wrapper {
@@ -715,7 +733,7 @@
 <body>
 
 <div id="loadingScreen" class="overlay-screen">
-    <img class="app-logo-large" src="https://raw.githubusercontent.com/mpreven-tech/travel-trainer-app/refs/heads/main/travel_trainer_logo.png" alt="Travel Trainer Logo" aria-hidden="true">
+    <img class="app-logo-large" src="https://res.cloudinary.com/dhpwydwuc/image/upload/v1773005859/Vector_2_bwll9g.png" alt="Travel Trainer Logo" aria-hidden="true">
     <h1 class="loading-title">Welcome to the Travel Trainer App</h1>
 </div>
 
@@ -735,7 +753,7 @@
     </div>
 
     <div class="container" id="setupScreen">
-        <img class="app-logo-small" src="https://raw.githubusercontent.com/mpreven-tech/travel-trainer-app/refs/heads/main/travel_trainer_logo.png" alt="Travel Trainer Logo" aria-hidden="true">
+        <img class="app-logo-small" src="https://res.cloudinary.com/dhpwydwuc/image/upload/v1773005859/Vector_2_bwll9g.png" alt="Travel Trainer Logo" aria-hidden="true">
         <h1 class="app-title">Travel Trainer</h1>
         <p class="subtitle">Training for here ... there ... and everywhere.</p>
 
@@ -829,13 +847,15 @@
 
         <div class="timer-display" id="timer" aria-label="Time remaining in seconds">–</div>
 
-        <button class="btn btn-secondary" onclick="endSession()">End Session</button>
+        <div class="btn-group">
+            <button class="btn btn-secondary" id="pauseBtn" onclick="togglePause()">Pause</button>
+            <button class="btn btn-secondary" onclick="endSession()">End Session</button>
+        </div>
     </div>
 </main>
 
-<!-- Tip Banner (Now only on home screen) -->
 <a id="tipBanner" href="https://venmo.com/u/matthew-preven" target="_blank" rel="noopener noreferrer" class="tip-banner">
-    <img src="https://media.licdn.com/dms/image/v2/D5603AQF7PHLPti7lxg/profile-displayphoto-scale_400_400/B56ZueduaMG0Ag-/0/1767890153529?e=1773273600&v=beta&t=t5FFphZksvfy4fyQUX50BZqpnkgMUEBLcR1nEFg_S0A" alt="Matthew Preven">
+    <img src="https://res.cloudinary.com/dhpwydwuc/image/upload/v1773518777/1767890153529_ltnh9g.jpg" alt="Matthew Preven">
     <div class="tip-banner-text">
         <span class="tip-banner-title">Tip the Developer</span>
         <span class="tip-banner-handle">Venmo @matthew-preven</span>
@@ -1013,7 +1033,7 @@ const exerciseDB = [
     { name:"Glute Bridges",       type:"strength", difficulty:"easy",   core: false, gif:gifLibrary["Glute Bridges"] },
     { name:"High Knees",          type:"cardio",   difficulty:"easy",   core: false, gif:gifLibrary["High Knees"] },
     { name:"Butt Kicks",          type:"cardio",   difficulty:"easy",   core: false, gif:gifLibrary["Butt Kicks"] },
-    { name:"Step Jacks",          type:"cardio",   difficulty:"easy",   core: false, gif:gifLibrary["Jumping Jacks"] },
+    { name:"Jumping Jacks",          type:"cardio",   difficulty:"easy",   core: false, gif:gifLibrary["Jumping Jacks"] },
     { name:"Side Leg Raises",     type:"strength", difficulty:"easy",   core: false, gif:gifLibrary["Side Leg Raises"] },
     { name:"Bird Dog",            type:"strength", difficulty:"easy",   core: true,  gif:gifLibrary["Bird Dog"] },
     { name:"Chair Squats",        type:"strength", difficulty:"easy",   core: false, gif:gifLibrary["Squats"] },
@@ -1102,6 +1122,7 @@ let timerInterval  = null;
 let timeLeft       = 0;
 let totalStepTime  = 0;
 let sessionStart   = null;
+let isPaused       = false; // NEW PAUSE STATE
 
 const REST_IMG = "https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExb3ZyczMzOWJtNzNncTN1OGhrc3VvbnBmYTNtMDltcHEwbjBlM3VsdSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/RfYPNHT08TsegXGMLH/giphy.gif";
 
@@ -1264,7 +1285,7 @@ function buildPlan(style, diff, durationMins) {
 }
 
 // ============================================================
-//  START WORKOUT
+//  START / END / PAUSE LOGIC
 // ============================================================
 function startWorkout() {
     const style    = document.getElementById('style').value;
@@ -1297,8 +1318,27 @@ function startWorkout() {
 }
 
 function endSession() {
-    clearInterval(timerInterval);
+    if (timerInterval) clearInterval(timerInterval);
     location.reload();
+}
+
+function togglePause() {
+    const pauseBtn = document.getElementById('pauseBtn');
+    const screen = document.getElementById('workoutScreen');
+
+    if (isPaused) {
+        // Resume
+        isPaused = false;
+        pauseBtn.textContent = 'Pause';
+        screen.classList.remove('is-paused');
+        startTimerInterval();
+    } else {
+        // Pause
+        isPaused = true;
+        pauseBtn.textContent = 'Resume';
+        screen.classList.add('is-paused');
+        if (timerInterval) clearInterval(timerInterval);
+    }
 }
 
 // ============================================================
@@ -1346,6 +1386,42 @@ function updateOverallProgress() {
 }
 
 // ============================================================
+//  TIMER INTERVAL LOOP EXTRACTED FOR REUSE
+// ============================================================
+function startTimerInterval() {
+    if (timerInterval) clearInterval(timerInterval);
+
+    timerInterval = setInterval(() => {
+        if (isPaused) return; // Safeguard
+
+        timeLeft--;
+        const timerEl = document.getElementById('timer');
+        const screen = document.getElementById('workoutScreen');
+        const previewBubble = document.getElementById('previewBubble');
+        const next = workoutPlan[currentIndex + 1];
+
+        timerEl.textContent = timeLeft;
+        setRingProgress((timeLeft / totalStepTime) * 100);
+
+        if (timeLeft === 5 && next) {
+            previewBubble.classList.add('active');
+        }
+
+        if (timeLeft <= 5 && timeLeft > 0) {
+            screen.classList.add('low-time');
+            beepWarn();
+        }
+
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            screen.classList.remove('low-time');
+            currentIndex++;
+            runStep();
+        }
+    }, 1000);
+}
+
+// ============================================================
 //  RUN STEP
 // ============================================================
 function runStep() {
@@ -1359,6 +1435,12 @@ function runStep() {
     const screen = document.getElementById('workoutScreen');
 
     updateOverallProgress();
+
+    // Reset Pause UI state for the new step
+    isPaused = false;
+    screen.classList.remove('is-paused');
+    const pauseBtn = document.getElementById('pauseBtn');
+    if (pauseBtn) pauseBtn.textContent = 'Pause';
 
     // --- Badge ---
     const badge = document.getElementById('statusBadge');
@@ -1438,36 +1520,14 @@ function runStep() {
     setRingProgress(100);
     screen.classList.remove('low-time');
 
-    if (timerInterval) clearInterval(timerInterval);
-
-    timerInterval = setInterval(() => {
-        timeLeft--;
-        timerEl.textContent = timeLeft;
-        setRingProgress((timeLeft / totalStepTime) * 100);
-
-        if (timeLeft === 5 && next) {
-            previewBubble.classList.add('active');
-        }
-
-        if (timeLeft <= 5 && timeLeft > 0) {
-            screen.classList.add('low-time');
-            beepWarn();
-        }
-
-        if (timeLeft <= 0) {
-            clearInterval(timerInterval);
-            screen.classList.remove('low-time');
-            currentIndex++;
-            runStep();
-        }
-    }, 1000);
+    startTimerInterval();
 }
 
 // ============================================================
 //  WORKOUT COMPLETE
 // ============================================================
 function showComplete() {
-    clearInterval(timerInterval);
+    if (timerInterval) clearInterval(timerInterval);
     beepComplete();
 
     const elapsed  = Math.round((Date.now() - sessionStart) / 60000);
